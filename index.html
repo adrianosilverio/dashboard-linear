@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Pessoal — Adriano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070D; --surface:#0F0F18; --surface2:#161622; --surface3:#1E1E2E;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.10);
+  --text:#E8E8F0; --muted:#6B6B80; --muted2:#9090A8;
+  --accent:#00C896; --accent2:#00A87E; --risk:#FF5F5F; --warn:#F5A623;
+  --agenda:#7C85FF; --success:#34D399;
+  --sidebar-w:220px; --radius:12px; --radius-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:13px;line-height:1.5}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0}
+.sidebar-logo{padding:0 16px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.logo-pill{display:flex;align-items:center;gap:10px}
+.logo-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--agenda));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;flex-shrink:0}
+.logo-name{font-size:13px;font-weight:600}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.sync-status{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);padding:6px 16px;margin-bottom:4px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{0%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.6}100%{transform:scale(1);opacity:1}}
+.sync-dot.idle{animation:pulse 2s infinite}
+.sync-dot.syncing{background:var(--warn);animation:spin 1s linear infinite}
+.sync-dot.error{background:var(--risk)}
+.sidebar-section{padding:0 8px;margin-bottom:4px}
+.sidebar-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--muted2);font-size:12.5px;font-weight:450;transition:all .15s;text-decoration:none;position:relative}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(0,200,150,.10);color:var(--accent);font-weight:500}
+.nav-item .icon{width:15px;height:15px;opacity:.8;flex-shrink:0}
+.nav-item.active .icon{opacity:1}
+.nav-badge{margin-left:auto;background:var(--surface3);color:var(--muted2);font-size:9px;font-weight:600;padding:1px 5px;border-radius:20px;min-width:18px;text-align:center}
+.nav-item.active .nav-badge{background:rgba(0,200,150,.2);color:var(--accent)}
+.nav-badge.risk{background:rgba(255,95,95,.15);color:var(--risk)}
+.nav-badge.warn{background:rgba(245,166,35,.15);color:var(--warn)}
+.sidebar-footer{margin-top:auto;padding:12px 8px 0;border-top:1px solid var(--border)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;padding:0 24px;height:52px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:600}
+.topbar-date{font-size:12px;color:var(--muted)}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--surface2);color:var(--muted2);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--text);background:var(--surface3)}
+.btn-danger{background:rgba(255,95,95,.15);color:var(--risk);border:1px solid rgba(255,95,95,.2)}
+.day-progress-bar{height:2px;background:var(--surface2);position:relative;flex-shrink:0}
+.day-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--agenda));transition:width 1s ease;position:relative}
+.day-progress-fill::after{content:'';position:absolute;right:-1px;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--agenda);box-shadow:0 0 8px var(--agenda)}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* PANELS */
+.panel{display:none}
+.panel.active{display:block}
+
+/* GRID */
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.home-grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.home-grid-triple{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+.card-count{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--surface3);color:var(--muted2)}
+.card-count.accent{background:rgba(0,200,150,.15);color:var(--accent)}
+.card-count.risk{background:rgba(255,95,95,.15);color:var(--risk)}
+.card-count.warn{background:rgba(245,166,35,.15);color:var(--warn)}
+.card-count.agenda{background:rgba(124,133,255,.15);color:var(--agenda)}
+.card-link{font-size:10.5px;color:var(--muted);cursor:pointer;transition:color .15s}
+.card-link:hover{color:var(--accent)}
+
+/* TASK ITEMS */
+.task-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s}
+.task-item:last-child{border-bottom:none;padding-bottom:0}
+.task-item:first-child{padding-top:0}
+.task-item:hover .task-text{color:var(--text)}
+.task-check{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:50%;flex-shrink:0;margin-top:1px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.task-check:hover{border-color:var(--accent);background:rgba(0,200,150,.1)}
+.task-check.done{border-color:var(--accent);background:var(--accent)}
+.task-check.done::after{content:'';width:5px;height:3px;border-left:1.5px solid #000;border-bottom:1.5px solid #000;transform:rotate(-45deg) translateY(-1px)}
+.task-body{flex:1;min-width:0}
+.task-text{font-size:12.5px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-text.done-text{text-decoration:line-through;color:var(--muted)}
+.task-meta{font-size:10.5px;color:var(--muted);margin-top:1px}
+.task-tag{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:600;padding:1px 5px;border-radius:4px;margin-left:4px}
+.pri-urgent{background:rgba(255,95,95,.15);color:var(--risk)}
+.pri-high{background:rgba(245,166,35,.15);color:var(--warn)}
+.pri-medium{background:rgba(124,133,255,.15);color:var(--agenda)}
+.pri-low{background:var(--surface3);color:var(--muted2)}
+
+/* WAITING */
+.wait-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.wait-item:last-child{border-bottom:none;padding-bottom:0}
+.wait-item:first-child{padding-top:0}
+.wait-dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex-shrink:0;box-shadow:0 0 6px rgba(245,166,35,.4)}
+.wait-who{margin-left:auto;font-size:10px;color:var(--muted);background:var(--surface3);padding:1px 6px;border-radius:4px}
+
+/* STATUS PILL */
+.status-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.status-pill.backlog{background:var(--surface3);color:var(--muted2)}
+.status-pill.inprogress{background:rgba(124,133,255,.12);color:var(--agenda)}
+.status-pill.done{background:rgba(52,211,153,.12);color:var(--success)}
+.status-pill.cancelled{background:rgba(255,95,95,.10);color:var(--muted)}
+.status-pill.active{background:rgba(0,200,150,.12);color:var(--accent)}
+.status-pill.paused{background:rgba(245,166,35,.12);color:var(--warn)}
+.status-pill.todo{background:var(--surface3);color:var(--muted2)}
+
+/* PROG BAR */
+.prog-bar{width:80px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--agenda))}
+
+/* PROJ TABLE */
+.proj-table{width:100%;border-collapse:collapse}
+.proj-table th{text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px 10px 0;border-bottom:1px solid var(--border)}
+.proj-table td{padding:10px 10px 10px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--muted2);vertical-align:middle}
+.proj-table tr:last-child td{border-bottom:none}
+.proj-table tr:hover td{color:var(--text)}
+.proj-name{display:flex;align-items:center;gap:8px;color:var(--text)!important;font-weight:500}
+.proj-emoji{width:24px;height:24px;border-radius:6px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+
+/* AREAS */
+.areas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.area-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;cursor:pointer;transition:all .2s}
+.area-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.area-emoji{font-size:18px;margin-bottom:8px;display:block}
+.area-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.area-sub{font-size:10.5px;color:var(--muted)}
+.area-prog{margin-top:10px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.area-prog-fill{height:100%;border-radius:2px;transition:width .8s ease}
+
+/* FINANCES */
+.fin-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.fin-row:last-child{border-bottom:none}
+.fin-label{color:var(--muted2)}
+.fin-val{font-weight:600;font-size:13px}
+.fin-val.green{color:var(--accent)}
+.fin-val.red{color:var(--risk)}
+.fin-val.purple{color:var(--agenda)}
+
+/* QUICK CAPTURE */
+.quick-capture{position:fixed;bottom:20px;left:calc(var(--sidebar-w) + 20px);right:20px;z-index:200}
+.capture-bar{background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px)}
+.capture-input{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:13px;color:var(--text)}
+.capture-input::placeholder{color:var(--muted)}
+.capture-type{display:flex;gap:4px}
+.cap-type-btn{font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--muted2);cursor:pointer;font-family:inherit;transition:all .15s}
+.cap-type-btn:hover{border-color:var(--accent);color:var(--accent)}
+.cap-type-btn.selected{background:rgba(0,200,150,.15);border-color:var(--accent);color:var(--accent)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px;width:480px;max-width:90vw;box-shadow:0 24px 60px rgba(0,0,0,.8)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:16px}
+.modal-field{margin-bottom:12px}
+.modal-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.modal-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
+.modal-input:focus{border-color:var(--accent)}
+.modal-select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;outline:none;cursor:pointer}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* TOAST */
+.toast-container{position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:toast-in .2s ease;max-width:280px}
+.toast.success{border-left:3px solid var(--accent)}
+.toast.error{border-left:3px solid var(--risk)}
+.toast.info{border-left:3px solid var(--agenda)}
+@keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* LINEAR BADGE */
+.linear-badge{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:600;color:var(--agenda);background:rgba(124,133,255,.1);padding:1px 5px;border-radius:3px}
+
+/* PAGE */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:18px;font-weight:700}
+.page-subtitle{font-size:12px;color:var(--muted);margin-top:2px}
+.full-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.full-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+.full-item:last-child{border-bottom:none}
+.full-item:hover{background:var(--surface2)}
+
+/* CONFIG PANEL */
+.config-panel{position:fixed;top:0;right:0;width:340px;height:100vh;background:var(--surface);border-left:1px solid var(--border2);z-index:500;padding:24px;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;box-shadow:-8px 0 40px rgba(0,0,0,.5)}
+.config-panel.open{transform:translateX(0)}
+.config-title{font-size:14px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.config-section{margin-bottom:20px}
+.config-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;color:var(--muted);text-align:center;gap:8px}
+.empty-state-icon{font-size:28px}
+.empty-state-text{font-size:12.5px}
+.flex{display:flex}
+.gap-8{gap:8px}
+.text-muted{color:var(--muted)}
+.text-accent{color:var(--accent)}
+.text-xs{font-size:10px}
+.text-sm{font-size:11px}
+.font-600{font-weight:600}
+.font-700{font-weight:700}
+.mt-8{margin-top:8px}
+.mt-12{margin-top:12px}
+.w-full{width:100%}
+.toggle{position:relative;width:32px;height:18px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:9px;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:var(--muted2);border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider{background:rgba(0,200,150,.3)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(14px);background:var(--accent)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-pill">
+      <div class="logo-avatar">A</div>
+      <div>
+        <div class="logo-name">Adriano</div>
+        <div class="logo-sub">Sistema Pessoal</div>
+      </div>
+    </div>
+  </div>
+  <div class="sync-status">
+    <span class="sync-dot idle" id="syncDot"></span>
+    <span id="syncText">Conectando…</span>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Principal</div>
+    <a class="nav-item active" data-panel="home" onclick="switchPanel('home')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14H10V9.5H6V14H2V6.5z" fill="currentColor" opacity=".9"/></svg>
+      Visão Geral
+    </a>
+    <a class="nav-item" data-panel="tarefas" onclick="switchPanel('tarefas')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Tarefas
+      <span class="nav-badge warn" id="badgeTarefas">0</span>
+    </a>
+    <a class="nav-item" data-panel="agenda" onclick="switchPanel('agenda')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Agenda
+    </a>
+    <a class="nav-item" data-panel="inbox" onclick="switchPanel('inbox')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 7h4.5l1.5 2 1.5-2H14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Inbox
+      <span class="nav-badge warn" id="badgeInbox">0</span>
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Controle</div>
+    <a class="nav-item" data-panel="waiting" onclick="switchPanel('waiting')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Aguardando
+      <span class="nav-badge warn" id="badgeWaiting">0</span>
+    </a>
+    <a class="nav-item" data-panel="decisoes" onclick="switchPanel('decisoes')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".75" fill="currentColor"/></svg>
+      Decisões
+      <span class="nav-badge risk" id="badgeDecisoes">0</span>
+    </a>
+    <a class="nav-item" data-panel="preocupacoes" onclick="switchPanel('preocupacoes')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 13h12L8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".7" fill="currentColor"/></svg>
+      Preocupações
+      <span class="nav-badge risk" id="badgePreoc">0</span>
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Visão</div>
+    <a class="nav-item" data-panel="areas" onclick="switchPanel('areas')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3" stroke="currentColor" stroke-width="1.4"/></svg>
+      Áreas da Vida
+    </a>
+    <a class="nav-item" data-panel="financas" onclick="switchPanel('financas')">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M2 11l3.5-4 3 2.5L12 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="5" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+      Finanças
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <a class="nav-item" onclick="toggleConfig()">
+      <svg class="icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Configurações
+    </a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="pageTitle">Visão Geral</div>
+      <div class="topbar-date" id="topbarDate"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="syncLinear()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0110.5-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 8a6 6 0 01-10.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.5 3.5L13 6h-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 12.5L3 10h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sincronizar
+      </button>
+      <button class="btn btn-primary" onclick="openModal('new-item')">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Novo
+      </button>
+    </div>
+  </div>
+  <div class="day-progress-bar"><div class="day-progress-fill" id="dayProgressFill" style="width:0%"></div></div>
+
+  <div class="content">
+
+    <!-- HOME -->
+    <div class="panel active" id="panel-home">
+      <div class="home-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🎯 Urgentes</span><span class="card-count risk" id="cntUrgente">0</span></div>
+          <div id="listUrgente"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('tarefas')">Ver todas →</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚡ Alta prioridade</span><span class="card-count warn" id="cntAlta">0</span></div>
+          <div id="listAlta"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('tarefas')">Ver todas →</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 Vencendo hoje</span><span class="card-count risk" id="cntHoje">0</span></div>
+          <div id="listHoje"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('tarefas')">Ver todas →</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⏰ Próximos 7 dias</span><span class="card-count agenda" id="cntAgenda7">0</span></div>
+          <div id="listAgenda7"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('agenda')">Ver agenda →</div>
+        </div>
+      </div>
+      <div class="home-grid-bottom">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 Issues do Linear</span>
+            <div class="flex gap-8">
+              <span class="linear-badge">DRI · Personal</span>
+              <div class="card-link" onclick="switchPanel('tarefas')">Ver todas →</div>
+            </div>
+          </div>
+          <table class="proj-table"><thead><tr><th>Issue</th><th>Prioridade</th><th>Prazo</th><th>Status</th></tr></thead><tbody id="tbodyHome"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🌍 Áreas da vida</span><div class="card-link" onclick="switchPanel('areas')">Ver detalhes →</div></div>
+          <div class="areas-grid" id="areasGrid"></div>
+        </div>
+      </div>
+      <div class="home-grid-triple">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🧠 Decisões</span><span class="card-count risk" id="cntDecMini">0</span></div>
+          <div id="listDecMini"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('decisoes')">Ver todas →</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Preocupações</span><span class="card-count risk" id="cntPreocMini">0</span></div>
+          <div id="listPreocMini"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('preocupacoes')">Ver todas →</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">💰 Finanças</span><div class="card-link" onclick="switchPanel('financas')">Detalhes →</div></div>
+          <div id="finMini"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📥 Inbox</span><span class="card-count warn" id="cntInboxMini">0</span></div>
+          <div id="listInboxMini"></div>
+          <div class="divider"></div><div class="card-link" onclick="switchPanel('inbox')">Processar →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAREFAS -->
+    <div class="panel" id="panel-tarefas">
+      <div class="page-header">
+        <div><div class="page-title">Tarefas</div><div class="page-subtitle">Sincronizado com Linear · Team Personal</div></div>
+        <div class="flex gap-8">
+          <button class="btn btn-ghost" onclick="syncLinear()">🔄 Sincronizar</button>
+          <button class="btn btn-primary" onclick="openModal('new-item')">+ Nova</button>
+        </div>
+      </div>
+      <div class="full-list" id="tarefasList"></div>
+    </div>
+
+    <!-- AGENDA -->
+    <div class="panel" id="panel-agenda">
+      <div class="page-header">
+        <div><div class="page-title">Agenda</div><div class="page-subtitle">Compromissos e prazos</div></div>
+        <button class="btn btn-primary" onclick="openModal('new-event')">+ Evento</button>
+      </div>
+      <div id="agendaFull"></div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="panel" id="panel-inbox">
+      <div class="page-header">
+        <div><div class="page-title">Inbox</div><div class="page-subtitle">Capture tudo. Processe depois.</div></div>
+        <div class="flex gap-8">
+          <button class="btn btn-ghost" onclick="clearInbox()">Limpar tudo</button>
+          <button class="btn btn-primary" onclick="openModal('new-item')">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="full-list" id="inboxList"></div>
+    </div>
+
+    <!-- WAITING -->
+    <div class="panel" id="panel-waiting">
+      <div class="page-header">
+        <div><div class="page-title">Aguardando Terceiros</div><div class="page-subtitle">Tudo que depende de outra pessoa</div></div>
+        <button class="btn btn-primary" onclick="openModal('new-waiting')">+ Adicionar</button>
+      </div>
+      <div class="full-list" id="waitingList"></div>
+    </div>
+
+    <!-- DECISÕES -->
+    <div class="panel" id="panel-decisoes">
+      <div class="page-header">
+        <div><div class="page-title">Decisões Abertas</div><div class="page-subtitle">Ficam visíveis até serem resolvidas</div></div>
+        <button class="btn btn-primary" onclick="openModal('new-decisao')">+ Nova Decisão</button>
+      </div>
+      <div class="full-list" id="decisoesList"></div>
+    </div>
+
+    <!-- PREOCUPAÇÕES -->
+    <div class="panel" id="panel-preocupacoes">
+      <div class="page-header">
+        <div><div class="page-title">Preocupações</div><div class="page-subtitle">Tire da cabeça. Converta em ação.</div></div>
+        <button class="btn btn-primary" onclick="openModal('new-preoc')">+ Registrar</button>
+      </div>
+      <div class="full-list" id="preocList"></div>
+    </div>
+
+    <!-- ÁREAS -->
+    <div class="panel" id="panel-areas">
+      <div class="page-header"><div><div class="page-title">Áreas da Vida</div><div class="page-subtitle">O panorama completo</div></div></div>
+      <div id="areasFull"></div>
+    </div>
+
+    <!-- FINANÇAS -->
+    <div class="panel" id="panel-financas">
+      <div class="page-header">
+        <div><div class="page-title">Finanças</div><div class="page-subtitle">Patrimônio e metas</div></div>
+      </div>
+      <div id="financasFull"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <div class="quick-capture">
+    <div class="capture-bar">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color:var(--muted);flex-shrink:0"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input class="capture-input" id="captureInput" placeholder="Capture qualquer pensamento… (Enter para salvar)" />
+      <div class="capture-type">
+        <button class="cap-type-btn selected" data-type="inbox">Inbox</button>
+        <button class="cap-type-btn" data-type="tarefa">Tarefa</button>
+        <button class="cap-type-btn" data-type="decisao">Decisão</button>
+        <button class="cap-type-btn" data-type="preocupacao">⚠️</button>
+        <button class="cap-type-btn" data-type="waiting">⏳</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- CONFIG PANEL -->
+<div class="config-panel" id="configPanel">
+  <div class="config-title">
+    Configurações
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" onclick="toggleConfig()" style="cursor:pointer;color:var(--muted)"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="config-section">
+    <div class="config-label">Linear — Personal API Token</div>
+    <div class="modal-field">
+      <div class="modal-label">Token</div>
+      <input class="modal-input" id="cfToken" type="password" placeholder="lin_api_…" />
+    </div>
+    <button class="btn btn-primary w-full mt-8" onclick="saveToken()">Salvar token</button>
+    <div id="tokenStatus" style="margin-top:8px;font-size:10.5px;color:var(--muted)"></div>
+  </div>
+  <div class="config-section">
+    <div class="config-label">Sincronização automática</div>
+    <div class="settings-row">
+      <div>
+        <div style="font-size:12.5px;font-weight:500">Auto-sync a cada 5 min</div>
+        <div class="text-xs text-muted" style="margin-top:2px">Puxa issues do Linear automaticamente</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="toggleAutoSync" checked><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+  <div class="config-section">
+    <div class="config-label">Finanças</div>
+    <div class="modal-field"><div class="modal-label">Patrimônio líquido</div><input class="modal-input" id="cfPatrimonio" placeholder="1.250.000" oninput="saveFinances()" /></div>
+    <div class="modal-field"><div class="modal-label">Investimentos</div><input class="modal-input" id="cfInvestimentos" placeholder="1.050.000" oninput="saveFinances()" /></div>
+    <div class="modal-field"><div class="modal-label">Caixa disponível</div><input class="modal-input" id="cfCaixa" placeholder="120.000" oninput="saveFinances()" /></div>
+    <div class="modal-field"><div class="modal-label">Dívidas</div><input class="modal-input" id="cfDividas" placeholder="80.000" oninput="saveFinances()" /></div>
+    <div class="modal-field"><div class="modal-label">Meta patrimônio</div><input class="modal-input" id="cfMeta" placeholder="1.500.000" oninput="saveFinances()" /></div>
+  </div>
+  <button class="btn btn-primary w-full" onclick="syncLinear()">🔄 Sincronizar agora</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ── CONFIG ── */
+const LINEAR_API = 'https://api.linear.app/graphql';
+const TEAM_ID    = 'a95912fc-563c-409b-97be-92e5f12c9357'; // Personal
+const DEFAULT_TOKEN = 'lin_api_Y1fqhYTALdxvSTYXYyEOoI9dpzfugOQWFet3G2TK';
+const STORAGE_KEY = 'adriano-dashboard-v2';
+
+/* ── STATE ── */
+let APP = {
+  issues: [],          // from Linear
+  localItems: [],      // inbox, decisao, preocupacao, waiting (local only)
+  events: [],
+  finances: { patrimonio:1250000, investimentos:1050000, caixa:120000, dividas:80000, meta:1500000 },
+  token: DEFAULT_TOKEN,
+  lastSync: null,
+  syncInterval: null,
+  areas: [
+    { id:'saude',         emoji:'🏥', name:'Saúde',          sub:'Consultas, remédios',    prog:60, color:'#34D399' },
+    { id:'financas',      emoji:'💰', name:'Finanças',        sub:'Patrimônio, dívidas',    prog:55, color:'#00C896' },
+    { id:'rotina',        emoji:'⚙️',  name:'Rotina',          sub:'Hábitos, disciplina',   prog:40, color:'#7C85FF' },
+    { id:'relacionamento',emoji:'❤️', name:'Relacionamento',  sub:'Família, amigos',        prog:70, color:'#FF6B9D' },
+    { id:'casa',          emoji:'🏠', name:'Casa',            sub:'Organização, compras',   prog:35, color:'#F5A623' },
+    { id:'desenvolvimento',emoji:'📚',name:'Desenvolvimento', sub:'Estudos, projetos',      prog:50, color:'#60A5FA' },
+  ]
+};
+
+/* ── STORAGE ── */
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localItems: APP.localItems,
+    events: APP.events,
+    finances: APP.finances,
+    token: APP.token,
+    areas: APP.areas
+  }));
+}
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (d.localItems) APP.localItems = d.localItems;
+    if (d.events)     APP.events     = d.events;
+    if (d.finances)   APP.finances   = d.finances;
+    if (d.token)      APP.token      = d.token;
+    if (d.areas)      APP.areas      = d.areas;
+    // Always ensure the default token if nothing saved
+    if (!APP.token)   APP.token      = DEFAULT_TOKEN;
+  } catch(e) {}
+}
+
+/* ── LINEAR ── */
+async function linearQuery(query, variables = {}) {
+  try {
+    const res = await fetch(LINEAR_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': APP.token },
+      body: JSON.stringify({ query, variables })
+    });
+    const json = await res.json();
+    if (json.errors) throw new Error(json.errors[0].message);
+    return json.data;
+  } catch(e) {
+    console.error('Linear error:', e);
+    throw e;
+  }
+}
+
+async function syncLinear() {
+  setSyncStatus('syncing');
+  try {
+    const data = await linearQuery(`
+      query($teamId: String!) {
+        team(id: $teamId) {
+          issues(first: 100, orderBy: updatedAt, filter: { state: { type: { nin: ["completed","cancelled"] } } }) {
+            nodes {
+              id identifier title priority dueDate
+              state { name type }
+              labels { nodes { name } }
+              project { name }
+              description
+            }
+          }
+        }
+      }
+    `, { teamId: TEAM_ID });
+
+    const nodes = data?.team?.issues?.nodes || [];
+    APP.issues = nodes.map(i => ({
+      id: i.id,
+      identifier: i.identifier,
+      title: i.title,
+      priority: i.priority, // 0=none 1=urgent 2=high 3=medium 4=low
+      dueDate: i.dueDate || null,
+      status: i.state?.name || 'Backlog',
+      statusType: i.state?.type || 'backlog',
+      labels: (i.labels?.nodes || []).map(l => l.name),
+      project: i.project?.name || null,
+      done: false
+    }));
+
+    APP.lastSync = Date.now();
+    save();
+    render();
+    setSyncStatus('idle');
+    showToast(`${APP.issues.length} issues sincronizadas ✓`, 'success');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Erro ao sincronizar: ' + e.message, 'error');
+  }
+}
+
+/* ── PRIORITY HELPERS ── */
+function priLabel(p) { return ['—','Urgente','Alta','Média','Baixa'][p] || '—'; }
+function priClass(p) { return ['','pri-urgent','pri-high','pri-medium','pri-low'][p] || ''; }
+function priSort(p)  { return [99,1,2,3,4][p] || 99; }
+
+/* ── RENDER ── */
+function render() {
+  renderHome();
+  renderTarefas();
+  renderAgenda();
+  renderInbox();
+  renderWaiting();
+  renderDecisoes();
+  renderPreocupacoes();
+  renderAreas();
+  renderFinancas();
+  updateBadges();
+}
+
+function issueRow(i) {
+  const due = i.dueDate ? formatShort(i.dueDate) : '—';
+  const isOverdue = i.dueDate && new Date(i.dueDate+'T12:00:00') < new Date();
+  return `
+    <div class="task-item">
+      <div class="task-body">
+        <div class="task-text">${esc(i.title)}</div>
+        <div class="task-meta">
+          <span style="color:var(--muted);font-size:9.5px">${i.identifier}</span>
+          ${i.labels.length ? `<span style="margin-left:4px;color:var(--muted)">${i.labels[0]}</span>` : ''}
+        </div>
+      </div>
+      <span class="task-tag ${priClass(i.priority)}">${priLabel(i.priority)}</span>
+      <span style="font-size:10px;color:${isOverdue ? 'var(--risk)' : 'var(--muted)'};margin-left:4px">${due}</span>
+    </div>`;
+}
+
+function renderHome() {
+  const today = formatDate(new Date());
+  const in7   = formatDate(new Date(Date.now() + 7*86400000));
+
+  const urgent = APP.issues.filter(i => i.priority === 1).slice(0,5);
+  const alta   = APP.issues.filter(i => i.priority === 2).slice(0,5);
+  const hoje   = APP.issues.filter(i => i.dueDate === today);
+  const prox7  = APP.issues.filter(i => i.dueDate && i.dueDate <= in7 && i.dueDate >= today).slice(0,5);
+
+  setEl('cntUrgente', urgent.length);
+  setEl('cntAlta', alta.length);
+  setEl('cntHoje', hoje.length);
+  setEl('cntAgenda7', prox7.length);
+
+  setHtml('listUrgente', urgent.map(issueRow).join('') || empty('Nenhuma urgente'));
+  setHtml('listAlta', alta.map(issueRow).join('') || empty('Nenhuma urgente'));
+  setHtml('listHoje', hoje.map(issueRow).join('') || empty('Nenhuma vencendo hoje'));
+  setHtml('listAgenda7', prox7.map(i => `
+    <div class="agenda-item" style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--agenda);font-weight:700;flex-shrink:0">${formatShort(i.dueDate)}</span>
+      <span style="font-size:12px;color:var(--muted2)">${esc(i.title)}</span>
+    </div>`).join('') || empty('Nenhum prazo próximo'));
+
+  // Table home
+  const top = [...APP.issues].sort((a,b) => priSort(a.priority)-priSort(b.priority)).slice(0,8);
+  setHtml('tbodyHome', top.map(i => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:9.5px;color:var(--muted)">${i.identifier}</span>
+        <span style="color:var(--text)">${esc(i.title)}</span>
+        ${i.project ? `<span class="linear-badge" style="margin-left:4px">${esc(i.project)}</span>` : ''}
+      </div></td>
+      <td><span class="task-tag ${priClass(i.priority)}">${priLabel(i.priority)}</span></td>
+      <td style="color:${i.dueDate && i.dueDate < today ? 'var(--risk)' : 'var(--muted)'}">
+        ${i.dueDate ? formatShort(i.dueDate) : '—'}
+      </td>
+      <td><span class="status-pill ${statusClass(i.statusType)}">${i.status}</span></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted)">Sincronize para ver issues</td></tr>');
+
+  // Decisões mini
+  const decs = APP.localItems.filter(i => i.type === 'decisao').slice(0,4);
+  setEl('cntDecMini', decs.length);
+  setHtml('listDecMini', decs.map(i => `<div class="task-item"><div style="width:7px;height:7px;border-radius:50%;background:var(--risk);flex-shrink:0;margin-top:5px"></div><div class="task-text">${esc(i.text)}</div></div>`).join('') || empty('Sem decisões pendentes'));
+
+  // Preocupações mini
+  const preos = APP.localItems.filter(i => i.type === 'preocupacao').slice(0,3);
+  setEl('cntPreocMini', preos.length);
+  setHtml('listPreocMini', preos.map(i => `<div class="task-item"><span style="font-size:11px;flex-shrink:0;margin-top:2px">⚠️</span><div class="task-text">${esc(i.text)}</div></div>`).join('') || empty('Nenhuma preocupação'));
+
+  // Inbox mini
+  const inb = APP.localItems.filter(i => i.type === 'inbox').slice(0,4);
+  setEl('cntInboxMini', inb.length);
+  setHtml('listInboxMini', inb.map(i => `<div class="task-item"><div style="width:5px;height:5px;border-radius:50%;background:var(--warn);flex-shrink:0;margin-top:6px"></div><div class="task-text">${esc(i.text)}</div></div>`).join('') || empty('Inbox vazio 🎉'));
+
+  // Finanças mini
+  const f = APP.finances;
+  const pct = Math.min(Math.round(f.patrimonio / f.meta * 100), 100);
+  setHtml('finMini', `
+    <div class="fin-row"><span class="fin-label">Patrimônio</span><span class="fin-val green">${fmtBRL(f.patrimonio)}</span></div>
+    <div class="fin-row"><span class="fin-label">Investimentos</span><span class="fin-val purple">${fmtBRL(f.investimentos)}</span></div>
+    <div class="fin-row"><span class="fin-label">Dívidas</span><span class="fin-val red">-${fmtBRL(f.dividas)}</span></div>
+    <div style="margin-top:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span class="text-xs text-muted">Meta ${fmtBRL(f.meta)}</span>
+        <span class="text-xs font-700 text-accent">${pct}%</span>
+      </div>
+      <div class="prog-bar" style="width:100%"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>`);
+
+  // Areas
+  setHtml('areasGrid', APP.areas.map(a => `
+    <div class="area-card" onclick="switchPanel('areas')">
+      <span class="area-emoji">${a.emoji}</span>
+      <div class="area-name">${a.name}</div>
+      <div class="area-sub">${a.sub}</div>
+      <div class="area-prog"><div class="area-prog-fill" style="width:${a.prog}%;background:${a.color}"></div></div>
+    </div>`).join(''));
+}
+
+function renderTarefas() {
+  const sorted = [...APP.issues].sort((a,b) => {
+    const pd = priSort(a.priority) - priSort(b.priority);
+    if (pd !== 0) return pd;
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return 0;
+  });
+
+  if (sorted.length === 0) {
+    setHtml('tarefasList', '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">🔄</div><div class="empty-state-text">Clique em Sincronizar para carregar issues</div></div>');
+    return;
+  }
+
+  const today = formatDate(new Date());
+  setHtml('tarefasList', sorted.map(i => {
+    const isOverdue = i.dueDate && i.dueDate < today;
+    return `
+    <div class="full-item" style="gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:9.5px;color:var(--muted);flex-shrink:0">${i.identifier}</span>
+          <span style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(i.title)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          ${i.labels.map(l => `<span style="font-size:9px;color:var(--muted)">${esc(l)}</span>`).join('')}
+          ${i.project ? `<span class="linear-badge">${esc(i.project)}</span>` : ''}
+        </div>
+      </div>
+      <span class="task-tag ${priClass(i.priority)}">${priLabel(i.priority)}</span>
+      <span style="font-size:10.5px;color:${isOverdue ? 'var(--risk)' : 'var(--muted)'}">
+        ${i.dueDate ? formatShort(i.dueDate) : '—'}
+      </span>
+      <span class="status-pill ${statusClass(i.statusType)}">${i.status}</span>
+      <a href="${`https://linear.app/adriano-silverio/issue/${i.identifier}`}" target="_blank" style="font-size:10px;color:var(--agenda);text-decoration:none;opacity:.7" onclick="event.stopPropagation()">↗</a>
+    </div>`;
+  }).join(''));
+}
+
+function renderInbox() {
+  const items = APP.localItems.filter(i => i.type === 'inbox');
+  setHtml('inboxList', items.length ? items.map(i => `
+    <div class="full-item">
+      <div style="flex:1"><div style="font-size:13px;color:var(--text)">${esc(i.text)}</div><div class="text-xs text-muted" style="margin-top:2px">${timeAgo(i.created)}</div></div>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 8px" onclick="convertLocal('${i.id}','tarefa')">→ Tarefa</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 8px" onclick="convertLocal('${i.id}','decisao')">→ Decisão</button>
+      <button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">✕</button>
+    </div>`).join('') : '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">🎉</div><div class="empty-state-text">Inbox vazio. Ótimo trabalho!</div></div>');
+}
+
+function renderWaiting() {
+  const items = APP.localItems.filter(i => i.type === 'waiting');
+  setHtml('waitingList', items.length ? items.map(i => {
+    const dl = i.dueDate ? Math.ceil((new Date(i.dueDate) - Date.now())/86400000) : null;
+    const late = dl !== null && dl <= 0;
+    return `<div class="full-item">
+      <div class="wait-dot" style="${late ? 'background:var(--risk)' : ''}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--text)">${esc(i.text)}</div>
+        <div class="text-xs text-muted" style="margin-top:2px">${i.who ? esc(i.who)+' · ' : ''}${i.dueDate ? 'Prazo: '+formatShort(i.dueDate) : 'Sem prazo'}${late ? ' · <span style="color:var(--risk)">⚠️ Atrasado</span>' : ''}</div>
+      </div>
+      <button class="btn btn-primary" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">Recebido ✓</button>
+      <button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">✕</button>
+    </div>`;
+  }).join('') : '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">✅</div><div class="empty-state-text">Nada aguardando</div></div>');
+}
+
+function renderDecisoes() {
+  const items = APP.localItems.filter(i => i.type === 'decisao');
+  setHtml('decisoesList', items.length ? items.map(i => `
+    <div class="full-item">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--risk);flex-shrink:0;box-shadow:0 0 6px rgba(255,95,95,.4)"></div>
+      <div style="flex:1"><div style="font-size:13px;color:var(--text)">${esc(i.text)}</div></div>
+      <button class="btn btn-primary" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">Decidido ✓</button>
+      <button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">✕</button>
+    </div>`).join('') : '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">🧠</div><div class="empty-state-text">Sem decisões pendentes</div></div>');
+}
+
+function renderPreocupacoes() {
+  const items = APP.localItems.filter(i => i.type === 'preocupacao');
+  setHtml('preocList', items.length ? items.map(i => `
+    <div class="full-item">
+      <span style="font-size:14px;flex-shrink:0">⚠️</span>
+      <div style="flex:1"><div style="font-size:13px;color:var(--text)">${esc(i.text)}</div></div>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 8px" onclick="convertLocal('${i.id}','tarefa')">→ Tarefa</button>
+      <button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="deleteLocal('${i.id}')">✕</button>
+    </div>`).join('') : '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">😌</div><div class="empty-state-text">Nenhuma preocupação registrada</div></div>');
+}
+
+function renderAgenda() {
+  const today = new Date();
+  const groups = {};
+  APP.events.sort((a,b) => a.date.localeCompare(b.date)).forEach(ev => {
+    if (!groups[ev.date]) groups[ev.date] = [];
+    groups[ev.date].push(ev);
+  });
+  // Also add issues with due dates in next 30 days as agenda items
+  const in30 = formatDate(new Date(Date.now() + 30*86400000));
+  const todayStr = formatDate(today);
+  APP.issues.filter(i => i.dueDate && i.dueDate >= todayStr && i.dueDate <= in30).forEach(i => {
+    if (!groups[i.dueDate]) groups[i.dueDate] = [];
+    if (!groups[i.dueDate].find(e => e.id === i.id)) {
+      groups[i.dueDate].push({ id: i.id, text: i.title, isLinear: true, identifier: i.identifier });
+    }
+  });
+
+  let html = '';
+  Object.entries(groups).sort((a,b) => a[0].localeCompare(b[0])).forEach(([date, evs]) => {
+    const d = new Date(date+'T12:00:00');
+    const isToday = date === todayStr;
+    html += `<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:${isToday ? 'var(--accent)' : 'var(--muted)'};letter-spacing:.06em;text-transform:uppercase">
+          ${isToday ? '● HOJE · ' : ''}${d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}
+        </div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div class="full-list">
+        ${evs.map(ev => `<div class="full-item">
+          ${ev.time ? `<div style="font-size:12px;font-weight:700;color:var(--agenda);width:44px;flex-shrink:0">${ev.time}</div>` : '<div style="width:44px;flex-shrink:0"></div>'}
+          <div style="flex:1;font-size:13px;color:var(--text)">${esc(ev.text)}${ev.isLinear ? `<span class="linear-badge" style="margin-left:6px">${ev.identifier}</span>` : ''}</div>
+          ${!ev.isLinear ? `<button class="btn btn-danger" style="font-size:10px;padding:3px 7px" onclick="deleteEvent('${ev.id}')">✕</button>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  setHtml('agendaFull', html || '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">📅</div><div class="empty-state-text">Sem eventos agendados</div></div>');
+}
+
+function renderAreas() {
+  setHtml('areasFull', `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+    ${APP.areas.map(a => `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">${a.emoji}</span>
+        <div><div style="font-size:14px;font-weight:700">${a.name}</div><div class="text-xs text-muted">${a.sub}</div></div>
+        <div style="margin-left:auto;font-size:13px;font-weight:700;color:${a.color}">${a.prog}%</div>
+      </div>
+      <div class="prog-bar" style="width:100%;height:5px;margin-bottom:14px">
+        <div class="prog-fill" style="width:${a.prog}%;background:${a.color};height:100%"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">
+        ${APP.issues.filter(i => i.labels.some(l => l.toLowerCase().includes(a.name.toLowerCase()) || l.toLowerCase().includes(a.id))).length} issues relacionadas
+      </div>
+    </div>`).join('')}
+  </div>`);
+}
+
+function renderFinancas() {
+  const f = APP.finances;
+  const pct = Math.min(Math.round(f.patrimonio / f.meta * 100), 100);
+  setHtml('financasFull', `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Patrimônio Líquido</div>
+        <div style="font-size:28px;font-weight:800;color:var(--accent);margin-bottom:8px">${fmtBRL(f.patrimonio)}</div>
+        <div style="margin-bottom:6px;display:flex;justify-content:space-between">
+          <span class="text-xs text-muted">Meta: ${fmtBRL(f.meta)}</span>
+          <span class="text-xs font-700 text-accent">${pct}%</span>
+        </div>
+        <div class="prog-bar" style="width:100%;height:6px"><div class="prog-fill" style="width:${pct}%;height:100%"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Composição</div>
+        <div class="fin-row"><span class="fin-label">Investimentos</span><span class="fin-val purple">${fmtBRL(f.investimentos)}</span></div>
+        <div class="fin-row"><span class="fin-label">Caixa disponível</span><span class="fin-val">${fmtBRL(f.caixa)}</span></div>
+        <div class="fin-row"><span class="fin-label">Dívidas</span><span class="fin-val red">-${fmtBRL(f.dividas)}</span></div>
+      </div>
+    </div>`);
+}
+
+function updateBadges() {
+  setEl('badgeTarefas', APP.issues.length);
+  setEl('badgeInbox', APP.localItems.filter(i => i.type === 'inbox').length);
+  setEl('badgeWaiting', APP.localItems.filter(i => i.type === 'waiting').length);
+  setEl('badgeDecisoes', APP.localItems.filter(i => i.type === 'decisao').length);
+  setEl('badgePreoc', APP.localItems.filter(i => i.type === 'preocupacao').length);
+}
+
+/* ── NAVIGATION ── */
+const PANEL_LABELS = { home:'Visão Geral', tarefas:'Tarefas', agenda:'Agenda', inbox:'Inbox', waiting:'Aguardando Terceiros', decisoes:'Decisões Abertas', preocupacoes:'Preocupações', areas:'Áreas da Vida', financas:'Finanças' };
+
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll(`[data-panel="${id}"]`).forEach(n => n.classList.add('active'));
+  setEl('pageTitle', PANEL_LABELS[id] || id);
+  render();
+}
+
+/* ── CAPTURE ── */
+let captureType = 'inbox';
+function setupCapture() {
+  const input = document.getElementById('captureInput');
+  document.querySelectorAll('.cap-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cap-type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      captureType = btn.dataset.type;
+    });
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      addLocal(input.value.trim(), captureType);
+      input.value = '';
+      showToast('Capturado!', 'success');
+    }
+    if (e.key === 'Escape') input.blur();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); input.focus(); }
+  });
+}
+
+/* ── LOCAL ITEMS ── */
+function addLocal(text, type) {
+  APP.localItems.unshift({ id: uid(), type, text, created: Date.now() });
+  save(); render();
+}
+
+function deleteLocal(id) {
+  APP.localItems = APP.localItems.filter(i => i.id !== id);
+  save(); render();
+}
+
+function convertLocal(id, toType) {
+  const item = APP.localItems.find(i => i.id === id);
+  if (item) { item.type = toType; save(); render(); showToast('Convertido!', 'success'); }
+}
+
+function clearInbox() {
+  APP.localItems = APP.localItems.filter(i => i.type !== 'inbox');
+  save(); render(); showToast('Inbox limpo', 'info');
+}
+
+function deleteEvent(id) {
+  APP.events = APP.events.filter(e => e.id !== id);
+  save(); render();
+}
+
+/* ── MODALS ── */
+const MODALS = {
+  'new-item': {
+    title: 'Nova captura',
+    html: () => `
+      <div class="modal-field"><div class="modal-label">Tipo</div>
+        <select class="modal-select" id="mType">
+          <option value="inbox">Inbox</option><option value="tarefa">Tarefa</option>
+          <option value="decisao">Decisão</option><option value="preocupacao">Preocupação</option>
+          <option value="waiting">Aguardando</option>
+        </select>
+      </div>
+      <div class="modal-field"><div class="modal-label">Descrição</div><input class="modal-input" id="mText" placeholder="O que está na sua cabeça?" autofocus /></div>
+      <div class="modal-field" id="mWhoField" style="display:none"><div class="modal-label">Quem?</div><input class="modal-input" id="mWho" placeholder="Nome ou empresa" /></div>
+      <div class="modal-field"><div class="modal-label">Prazo (opcional)</div><input class="modal-input" id="mDue" type="date" /></div>`,
+    onOpen: () => {
+      document.getElementById('mType').addEventListener('change', e => {
+        document.getElementById('mWhoField').style.display = e.target.value === 'waiting' ? 'block' : 'none';
+      });
+    },
+    onSave: () => {
+      const text = document.getElementById('mText').value.trim();
+      if (!text) return;
+      const type = document.getElementById('mType').value;
+      const item = { id: uid(), type, text, created: Date.now(), due: document.getElementById('mDue').value || null, who: document.getElementById('mWho')?.value || null };
+      APP.localItems.unshift(item);
+      save(); render(); showToast('Adicionado!', 'success');
+    }
+  },
+  'new-waiting': {
+    title: 'Aguardando Terceiro',
+    html: () => `
+      <div class="modal-field"><div class="modal-label">O quê?</div><input class="modal-input" id="mWText" placeholder="Ex: Orçamento buffet" autofocus /></div>
+      <div class="modal-field"><div class="modal-label">Quem?</div><input class="modal-input" id="mWWho" placeholder="Nome ou empresa" /></div>
+      <div class="modal-field"><div class="modal-label">Prazo</div><input class="modal-input" id="mWDue" type="date" /></div>`,
+    onSave: () => {
+      const text = document.getElementById('mWText').value.trim();
+      if (!text) return;
+      APP.localItems.unshift({ id: uid(), type: 'waiting', text, who: document.getElementById('mWWho').value, due: document.getElementById('mWDue').value, created: Date.now() });
+      save(); render(); showToast('Adicionado!', 'success');
+    }
+  },
+  'new-decisao': {
+    title: 'Nova Decisão',
+    html: () => `<div class="modal-field"><div class="modal-label">Decisão em aberto</div><input class="modal-input" id="mDText" placeholder="Ex: Qual corretora usar?" autofocus /></div>`,
+    onSave: () => {
+      const text = document.getElementById('mDText').value.trim();
+      if (!text) return;
+      APP.localItems.unshift({ id: uid(), type: 'decisao', text, created: Date.now() });
+      save(); render(); showToast('Registrado!', 'success');
+    }
+  },
+  'new-preoc': {
+    title: 'Registrar Preocupação',
+    html: () => `<div class="modal-field"><div class="modal-label">O que está te preocupando?</div><input class="modal-input" id="mPText" placeholder="Tire da cabeça..." autofocus /></div>`,
+    onSave: () => {
+      const text = document.getElementById('mPText').value.trim();
+      if (!text) return;
+      APP.localItems.unshift({ id: uid(), type: 'preocupacao', text, created: Date.now() });
+      save(); render(); showToast('Registrado!', 'success');
+    }
+  },
+  'new-event': {
+    title: 'Novo Evento',
+    html: () => `
+      <div class="modal-field"><div class="modal-label">Evento</div><input class="modal-input" id="mEvText" placeholder="Ex: Consulta médica" autofocus /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="modal-field"><div class="modal-label">Data</div><input class="modal-input" id="mEvDate" type="date" /></div>
+        <div class="modal-field"><div class="modal-label">Hora</div><input class="modal-input" id="mEvTime" type="time" /></div>
+      </div>`,
+    onSave: () => {
+      const text = document.getElementById('mEvText').value.trim();
+      const date = document.getElementById('mEvDate').value;
+      if (!text || !date) return;
+      APP.events.push({ id: uid(), text, date, time: document.getElementById('mEvTime').value || null });
+      save(); render(); showToast('Evento adicionado!', 'success');
+    }
+  }
+};
+
+function openModal(type) {
+  const cfg = MODALS[type];
+  if (!cfg) return;
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `<div class="modal-title">${cfg.title}</div>${cfg.html()}<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveModal('${type}')">Salvar</button></div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+  if (cfg.onOpen) cfg.onOpen();
+  setTimeout(() => content.querySelector('input, select')?.focus(), 50);
+  content.addEventListener('keydown', e => { if (e.key === 'Enter') saveModal(type); }, { once: true });
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function saveModal(type) {
+  const cfg = MODALS[type];
+  if (cfg?.onSave) { cfg.onSave(); document.getElementById('modalOverlay').classList.remove('open'); }
+}
+
+/* ── CONFIG ── */
+function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
+
+function saveToken() {
+  const val = document.getElementById('cfToken').value.trim();
+  if (val) { APP.token = val; save(); showToast('Token salvo', 'success'); syncLinear(); }
+}
+
+function saveFinances() {
+  const parse = id => parseInt(document.getElementById(id)?.value.replace(/[^\d]/g,'')) || 0;
+  APP.finances = { patrimonio: parse('cfPatrimonio'), investimentos: parse('cfInvestimentos'), caixa: parse('cfCaixa'), dividas: parse('cfDividas'), meta: parse('cfMeta') };
+  save(); renderFinancas(); renderHome();
+}
+
+function populateConfig() {
+  const el = document.getElementById('cfToken');
+  if (el) el.value = APP.token || '';
+  const f = APP.finances;
+  ['Patrimonio','Investimentos','Caixa','Dividas','Meta'].forEach(k => {
+    const el = document.getElementById('cf'+k);
+    if (el) el.value = APP.finances[k.toLowerCase()] || '';
+  });
+  const status = document.getElementById('tokenStatus');
+  if (status) status.textContent = APP.token ? 'Token configurado ✓' : 'Sem token — insira um Personal API Token';
+}
+
+/* ── SYNC STATUS ── */
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (!dot || !txt) return;
+  dot.className = 'sync-dot ' + s;
+  txt.textContent = s === 'syncing' ? 'Sincronizando…' : s === 'error' ? 'Erro no sync' : `Sincronizado${APP.lastSync ? ' · '+timeAgo(APP.lastSync) : ''}`;
+}
+
+/* ── TOAST ── */
+function showToast(msg, type = 'info') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `${type==='success'?'✓':type==='error'?'✕':'ℹ'} <span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+/* ── DATE UTILS ── */
+function updateDateDisplay() {
+  const el = document.getElementById('topbarDate');
+  if (el) el.textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+function updateDayProgress() {
+  const now = new Date();
+  const pct = (now.getHours()*60 + now.getMinutes()) / (24*60) * 100;
+  const el = document.getElementById('dayProgressFill');
+  if (el) el.style.width = pct + '%';
+}
+function formatDate(d) { return d.toISOString().split('T')[0]; }
+function formatShort(s) {
+  if (!s) return '';
+  const d = new Date(s+'T12:00:00');
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'agora';
+  if (d < 3600000) return Math.floor(d/60000)+'min';
+  if (d < 86400000) return Math.floor(d/3600000)+'h';
+  return Math.floor(d/86400000)+'d';
+}
+
+/* ── HELPERS ── */
+function uid() { return Math.random().toString(36).substr(2,9); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtBRL(n) { return 'R$\u00A0' + Number(n).toLocaleString('pt-BR'); }
+function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function setHtml(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
+function empty(msg) { return `<div class="empty-state" style="padding:16px;text-align:center"><div class="text-xs text-muted">${msg}</div></div>`; }
+function statusClass(t) { return { backlog:'backlog', started:'inprogress', completed:'done', cancelled:'cancelled', triage:'backlog' }[t] || 'backlog'; }
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', () => {
+  load();
+  updateDateDisplay();
+  updateDayProgress();
+  setInterval(updateDayProgress, 60000);
+  setupCapture();
+  populateConfig();
+  render();
+  syncLinear();
+
+  if (document.getElementById('toggleAutoSync').checked) {
+    APP.syncInterval = setInterval(syncLinear, 5 * 60 * 1000);
+  }
+  document.getElementById('toggleAutoSync').addEventListener('change', e => {
+    if (e.target.checked) {
+      APP.syncInterval = setInterval(syncLinear, 5*60*1000);
+    } else {
+      clearInterval(APP.syncInterval);
+    }
+  });
+});
+</script>
+</body>
+</html>
