@@ -1569,7 +1569,7 @@ let APP = {
   events: [],         // agenda events
   syncInterval: null,
   lastSync: null,
-  linearConfig: { clientId: '', teamId: '', accessToken: '', refreshToken: '', expiresAt: 0, tokenType: 'Bearer' },
+  linearConfig: { clientId: '56e7c44ff85ea9c7d0150047d2efae97', teamId: 'a95912fc-563c-409b-97be-92e5f12c9357', accessToken: '', refreshToken: '', expiresAt: 0, tokenType: 'Bearer' },
   finances: { patrimonio: 1250000, investimentos: 1050000, caixa: 120000, dividas: 80000, meta: 1500000 },
   areas: [
     { id: 'relacionamento', emoji: '❤️', name: 'Relacionamento', sub: 'Casamento', prog: 65, color: '#FF6B9D' },
@@ -1624,7 +1624,14 @@ function loadFromStorage() {
     if (projects) APP.projects = JSON.parse(projects);
     if (events)   APP.events   = JSON.parse(events);
     if (finances) APP.finances = JSON.parse(finances);
-    if (linear)   APP.linearConfig = JSON.parse(linear);
+    if (linear) {
+      APP.linearConfig = JSON.parse(linear);
+      if (!APP.linearConfig.clientId) APP.linearConfig.clientId = '56e7c44ff85ea9c7d0150047d2efae97';
+      if (!APP.linearConfig.teamId)   APP.linearConfig.teamId   = 'a95912fc-563c-409b-97be-92e5f12c9357';
+    } else {
+      APP.linearConfig.clientId = '56e7c44ff85ea9c7d0150047d2efae97';
+      APP.linearConfig.teamId   = 'a95912fc-563c-409b-97be-92e5f12c9357';
+    }
     if (areas)    APP.areas    = JSON.parse(areas);
 
     // Populate config fields
@@ -1637,10 +1644,18 @@ function loadFromStorage() {
     // Populate finance fields
     populateFinanceConfig();
 
-    // Seed demo data if empty
-    if (APP.items.length === 0) seedDemoData();
+    // Demo data disabled: keep dashboard empty until Linear/local items are added
+    if (APP.items.length === 0) {
+      APP.items = [];
+      APP.projects = [];
+      APP.events = [];
+      saveToStorage();
+    }
   } catch(e) {
-    seedDemoData();
+    APP.items = [];
+    APP.projects = [];
+    APP.events = [];
+    saveToStorage();
   }
 }
 
